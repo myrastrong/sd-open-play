@@ -82,17 +82,33 @@ def _parse_time(token: str):
 
 
 def _time_range(text: str):
-    """'2:30-3:30pm' | '10:15am-2:30pm' → (sh,sm,eh,em) or None"""
+    """'2:30-3:30pm' | '10:15am-2:30pm' | '9-2:50pm' | '6-7:45pm' → (sh,sm,eh,em) or None"""
     text = text.strip().lower()
-    # Handle ranges like '10:15am-2:30pm' or '2:30-3:30pm' (shared am/pm suffix)
     m = re.match(r"(\d{1,2}(?::\d{2})?(?:am|pm)?)\s*[-–]\s*(\d{1,2}(?::\d{2})?(?:am|pm)?)", text)
     if not m:
         return None
     start_raw, end_raw = m.group(1), m.group(2)
-    # If start has no am/pm but end does, infer from end
+
+    # If start has no am/pm suffix, infer it from the end token.
+    # Naive inheritance ("9-2:50pm" → start gets "pm" → 9pm=21) is wrong when
+    # applying the end's suffix would make start LATER than end in 24h time.
+    # In that case the start must be AM (morning open play sessions never start
+    # in the evening and end before the next hour).
     if not re.search(r"(am|pm)", start_raw) and re.search(r"(am|pm)", end_raw):
-        suffix = re.search(r"(am|pm)", end_raw).group(1)
-        start_raw = start_raw + suffix
+        end_suffix = re.search(r"(am|pm)", end_raw).group(1)
+        start_h = int(re.match(r"(\d{1,2})", start_raw).group(1))
+        end_h_raw = int(re.match(r"(\d{1,2})", end_raw).group(1))
+
+        # Convert end to 24h to compare
+        end_h24 = end_h_raw + (12 if end_suffix == "pm" and end_h_raw != 12 else 0)
+        start_h24_if_pm = start_h + (12 if start_h != 12 else 0)
+
+        # If giving start the same suffix as end makes it >= end in 24h, use "am"
+        if end_suffix == "pm" and start_h24_if_pm >= end_h24:
+            start_raw = start_raw + "am"
+        else:
+            start_raw = start_raw + end_suffix
+
     t1 = _parse_time(start_raw)
     t2 = _parse_time(end_raw)
     if not t1 or not t2:
@@ -156,8 +172,33 @@ def parse_ocean_gym(text: str):
             dow     = DOW_MAP.get(day_str) or DOW_MAP.get(day_str + "s")
             if dow is None:
                 continue
-            # If rest ends with "&", the schedule continues on the next line
-            if rest.rstrip().endswith("&"):
+
+            # If rest contains "& <day_name> <times>", split into multiple
+            # (dow, rest) pairs and process each independently.
+            # e.g. "6-7:45pm & saturdays 11-2:45pm" → Tue segment + Sat segment
+            DAY_NAMES = r"monday|tuesday|wednesday|thursday|friday[s]?|saturday[s]?"
+            sub_day_split = re.split(r"&\s*(" + DAY_NAMES + r")\s+", rest)
+            # sub_day_split[0] = first segment's times, then alternating day/times
+            # e.g. ["6-7:45pm ", "saturday", "11-2:45pm"]
+            day_rest_pairs = [(dow, sub_day_split[0].strip())]
+            for k in range(1, len(sub_day_split) - 1, 2):
+                sub_day = sub_day_split[k].rstrip("s")
+                sub_dow = DOW_MAP.get(sub_day) or DOW_MAP.get(sub_day + "s")
+                sub_rest = sub_day_split[k + 1].strip() if k + 1 < len(sub_day_split) else ""
+                if sub_dow is not None and sub_rest:
+                    day_rest_pairs.append((sub_dow, sub_rest))
+
+            if len(day_rest_pairs) > 1:
+                # Multiple segments — queue them all for processing below
+                # by iterating; set dow/rest to first and push the rest onto a
+                # small local stack processed after this iteration.
+                extra_segments = day_rest_pairs[1:]
+                dow, rest = day_rest_pairs[0]
+            else:
+                extra_segments = []
+
+            # If the single rest ends with "&", schedule continues on next line
+            if not extra_segments and rest.rstrip().endswith("&"):
                 pending_continuation = (dow, current_sport, rest.rstrip().rstrip("&").rstrip())
                 continue
             # Otherwise clear any stale pending state
@@ -168,52 +209,57 @@ def parse_ocean_gym(text: str):
             dow, current_sport, partial_rest = pending_continuation
             rest = partial_rest + " " + line
             pending_continuation = None
+            extra_segments = []
 
         else:
             # No day name, no pending continuation — not a schedule line
             continue
 
-        # ── Extract and append events ──────────────────────────────────────
-        ranges = re.findall(
-            r"\d{1,2}(?::\d{2})?(?:am|pm)?\s*[-–]\s*\d{1,2}(?::\d{2})?(?:am|pm)?",
-            rest
-        )
-
-        for i, rng in enumerate(ranges):
-            times = _time_range(rng)
-            if not times:
-                continue
-            sh, sm, eh, em = times
-
-            label = current_sport
-            if current_sport == "Volleyball":
-                label = "Volleyball (Adults)"
-
-            # Pickleball Friday: merge all ranges (possibly split across lines)
-            # into one continuous block; annotate "3 courts from 2:30pm".
-            if current_sport == "Pickleball" and dow == 5 and len(ranges) > 1:
-                if i == 0:
-                    label = "Pickleball"
-                else:
-                    for ev in reversed(events):
-                        if (ev["center"] == "ocean_gym"
-                                and ev["dow"] == 5
-                                and ev["sport"] == "Pickleball"):
-                            ev["eh"]    = eh
-                            ev["em"]    = em
-                            ev["label"] = "Pickleball (3 courts from 2:30pm)"
-                            break
+        # ── Extract and append events for each (dow, rest) segment ───────────
+        def _append_events_for_segment(seg_dow, seg_rest):
+            ranges = re.findall(
+                r"\d{1,2}(?::\d{2})?(?:am|pm)?\s*[-–]\s*\d{1,2}(?::\d{2})?(?:am|pm)?",
+                seg_rest
+            )
+            for i, rng in enumerate(ranges):
+                times = _time_range(rng)
+                if not times:
                     continue
+                sh, sm, eh, em = times
 
-            events.append({
-                "center": "ocean_gym",
-                "dow":    dow,
-                "sport":  current_sport,
-                "label":  label,
-                "sh": sh, "sm": sm,
-                "eh": eh, "em": em,
-                "loc": "Gymnasium",
-            })
+                label = current_sport
+                if current_sport == "Volleyball":
+                    label = "Volleyball (Adults)"
+
+                # Pickleball Friday: merge all ranges into one continuous block
+                if current_sport == "Pickleball" and seg_dow == 5 and len(ranges) > 1:
+                    if i == 0:
+                        label = "Pickleball"
+                    else:
+                        for ev in reversed(events):
+                            if (ev["center"] == "ocean_gym"
+                                    and ev["dow"] == 5
+                                    and ev["sport"] == "Pickleball"):
+                                ev["eh"]    = eh
+                                ev["em"]    = em
+                                ev["label"] = "Pickleball (3 courts from 2:30pm)"
+                                break
+                        return  # don't append second block
+                    # fall through to append first block
+
+                events.append({
+                    "center": "ocean_gym",
+                    "dow":    seg_dow,
+                    "sport":  current_sport,
+                    "label":  label,
+                    "sh": sh, "sm": sm,
+                    "eh": eh, "em": em,
+                    "loc": "Gymnasium",
+                })
+
+        _append_events_for_segment(dow, rest)
+        for seg_dow, seg_rest in extra_segments:
+            _append_events_for_segment(seg_dow, seg_rest)
 
     return events if events else None
 
