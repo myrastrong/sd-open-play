@@ -525,15 +525,14 @@ const CENTERS = [
   { id:'nobel',       label:'Nobel Rec Center',     short:'Nobel',    addr:'8810 Judicial Dr',  col:'#5B2D8E', bg:'#ede8fb' },
 ];
 
-const SPORTS_LIST = ['Basketball','Volleyball','Badminton','Pickleball','Table Tennis','Ping Pong','Mahjong','Dance'];
+const SPORTS_LIST = ['Basketball','Volleyball','Badminton','Pickleball','Table Tennis / Ping Pong','Mahjong','Dance'];
 
 const SPORT_STYLE = {
   Basketball:    { col:'#185FA5', bg:'#ddeeff' },
   Volleyball:    { col:'#2E7D32', bg:'#e0f4e0' },
   Badminton:     { col:'#854F0B', bg:'#fdeecb' },
   Pickleball:    { col:'#5B2D8E', bg:'#ede8fb' },
-  'Table Tennis':{ col:'#0B6E56', bg:'#d8f3ec' },
-  'Ping Pong':   { col:'#0B6E56', bg:'#d8f3ec' },
+  'Table Tennis / Ping Pong':{ col:'#0B6E56', bg:'#d8f3ec' },
   Mahjong:       { col:'#7A4800', bg:'#fdeecb' },
   Dance:         { col:'#8B1A4A', bg:'#fce8f0' },
   Other:         { col:'#5a5a52', bg:'#efefef' },
@@ -615,48 +614,48 @@ function weeklyEvents(dow) {
 
   // ── OCEAN AIR ROOMS (oceanairopenplayrooms.pdf May 2026) ──────────────────────
   if (dow === 1) {
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:10, sm:0,  eh:16, em:30, loc:'Room 100' });
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:10, sm:0,  eh:12, em:30, loc:'Room 105' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:10, sm:0,  eh:16, em:30, loc:'Room 100' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:10, sm:0,  eh:12, em:30, loc:'Room 105' });
     e.push({ center:'ocean_rooms', sport:'Mahjong',   label:'Mahjong',   sh:13, sm:0,  eh:16, em:0,  loc:'Room 105' });
   }
   if (dow === 2) {
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong',      sh:9,  sm:0,  eh:19, em:45, loc:'Room 100' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',      sh:9,  sm:0,  eh:19, em:45, loc:'Room 100' });
     e.push({ center:'ocean_rooms', sport:'Dance',     label:'Chinese Dance',  sh:10, sm:0,  eh:12, em:0,  loc:'Room 105' });
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong',      sh:12, sm:30, eh:19, em:45, loc:'Room 105' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',      sh:12, sm:30, eh:19, em:45, loc:'Room 105' });
   }
   if (dow === 3) {
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:9,  sm:0,  eh:12, em:30, loc:'Room 100' });
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:9,  sm:0,  eh:17, em:30, loc:'Room 105' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:9,  sm:0,  eh:12, em:30, loc:'Room 100' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:9,  sm:0,  eh:17, em:30, loc:'Room 105' });
   }
   if (dow === 4) {
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong',       sh:9,  sm:0,  eh:17, em:30, loc:'Room 100' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',       sh:9,  sm:0,  eh:17, em:30, loc:'Room 100' });
     e.push({ center:'ocean_rooms', sport:'Dance',     label:'Turkish Dance',   sh:18, sm:0,  eh:20, em:0,  loc:'Room 100' });
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong',       sh:9,  sm:0,  eh:12, em:30, loc:'Room 105' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',       sh:9,  sm:0,  eh:12, em:30, loc:'Room 105' });
     e.push({ center:'ocean_rooms', sport:'Mahjong',   label:'Mahjong',         sh:13, sm:0,  eh:16, em:0,  loc:'Room 105' });
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong (pm)',  sh:16, sm:15, eh:20, em:45, loc:'Room 105' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong (pm)',  sh:16, sm:15, eh:20, em:45, loc:'Room 105' });
   }
   if (dow === 5) {
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:10, sm:0, eh:16, em:30, loc:'Room 100' });
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:10, sm:0, eh:16, em:30, loc:'Room 105' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:10, sm:0, eh:16, em:30, loc:'Room 100' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:10, sm:0, eh:16, em:30, loc:'Room 105' });
   }
   if (dow === 6) {
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:9, sm:0, eh:14, em:30, loc:'Room 100' });
-    e.push({ center:'ocean_rooms', sport:'Ping Pong', label:'Ping Pong', sh:9, sm:0, eh:14, em:30, loc:'Room 105' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:9, sm:0, eh:14, em:30, loc:'Room 100' });
+    e.push({ center:'ocean_rooms', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong', sh:9, sm:0, eh:14, em:30, loc:'Room 105' });
   }
 
   // ── BALBOA PARK ACTIVITY CENTER (bpaccalendar.pdf May 2026) ──────────────────
   if (dow === 0) {
     e.push({ center:'balboa', sport:'Badminton',    label:'Open/Club Badminton', sh:12, sm:0, eh:19, em:30, loc:'BPAC' });
-    e.push({ center:'balboa', sport:'Table Tennis', label:'Table Tennis',        sh:12, sm:0, eh:19, em:30, loc:'BPAC' });
+    e.push({ center:'balboa', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',        sh:12, sm:0, eh:19, em:30, loc:'BPAC' });
   }
   if (dow === 1) {
     e.push({ center:'balboa', sport:'Badminton',    label:'Open Badminton',      sh:13, sm:0,  eh:17, em:0,  loc:'BPAC' });
-    e.push({ center:'balboa', sport:'Table Tennis', label:'Table Tennis',        sh:13, sm:0,  eh:20, em:30, loc:'BPAC' });
+    e.push({ center:'balboa', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',        sh:13, sm:0,  eh:20, em:30, loc:'BPAC' });
     e.push({ center:'balboa', sport:'Volleyball',   label:'Open Volleyball',     sh:17, sm:30, eh:20, em:30, loc:'BPAC' });
   }
   if (dow === 2) {
     e.push({ center:'balboa', sport:'Badminton',    label:'Open/Club Badminton', sh:11, sm:0,  eh:20, em:30, loc:'BPAC' });
-    e.push({ center:'balboa', sport:'Table Tennis', label:'Table Tennis',        sh:15, sm:0,  eh:20, em:30, loc:'BPAC' });
+    e.push({ center:'balboa', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',        sh:15, sm:0,  eh:20, em:30, loc:'BPAC' });
     e.push({ center:'balboa', sport:'Pickleball',   label:'Pickleball',          sh:11, sm:0,  eh:14, em:30, loc:'BPAC' });
   }
   if (dow === 3) {
@@ -666,16 +665,16 @@ function weeklyEvents(dow) {
   }
   if (dow === 4) {
     e.push({ center:'balboa', sport:'Badminton',    label:'Open/Club Badminton', sh:11, sm:0,  eh:20, em:30, loc:'BPAC' });
-    e.push({ center:'balboa', sport:'Table Tennis', label:'Table Tennis',        sh:15, sm:0,  eh:20, em:30, loc:'BPAC' });
+    e.push({ center:'balboa', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',        sh:15, sm:0,  eh:20, em:30, loc:'BPAC' });
     e.push({ center:'balboa', sport:'Pickleball',   label:'Pickleball',          sh:11, sm:0,  eh:14, em:30, loc:'BPAC' });
   }
   if (dow === 5) {
     e.push({ center:'balboa', sport:'Badminton',    label:'Open/Club Badminton', sh:12, sm:0, eh:19, em:30, loc:'BPAC' });
-    e.push({ center:'balboa', sport:'Table Tennis', label:'Table Tennis',        sh:12, sm:0, eh:19, em:30, loc:'BPAC' });
+    e.push({ center:'balboa', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',        sh:12, sm:0, eh:19, em:30, loc:'BPAC' });
   }
   if (dow === 6) {
     e.push({ center:'balboa', sport:'Badminton',    label:'Open/Club Badminton', sh:9, sm:0, eh:16, em:30, loc:'BPAC' });
-    e.push({ center:'balboa', sport:'Table Tennis', label:'Table Tennis',        sh:9, sm:0, eh:16, em:30, loc:'BPAC' });
+    e.push({ center:'balboa', sport:'Table Tennis / Ping Pong', label:'Table Tennis / Ping Pong',        sh:9, sm:0, eh:16, em:30, loc:'BPAC' });
   }
 
   // ── NOBEL RECREATION CENTER (nobelopenplay.pdf + pickleball locations PDF) ──
