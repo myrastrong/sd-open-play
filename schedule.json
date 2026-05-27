@@ -115,6 +115,9 @@
       "loc": "Gymnasium"
     },
     {
+      "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+    },
+    {
       "center": "doyle",
       "dow": 1,
       "sport": "Volleyball",
@@ -792,11 +795,11 @@
       "center": "ocean_gym",
       "dow": 5,
       "sport": "Pickleball",
-      "label": "Pickleball",
+      "label": "Pickleball (3 courts from 2:30pm)",
       "sh": 10,
       "sm": 15,
-      "eh": 14,
-      "em": 30,
+      "eh": 18,
+      "em": 45,
       "loc": "Gymnasium"
     },
     {
