@@ -1,0 +1,63 @@
+name: Refresh Open Play Schedules
+
+on:
+  # Every Saturday at 8:00 AM Pacific (15:00 UTC)
+  schedule:
+    - cron: '0 15 * * 6'
+
+  # Also allow running manually from the GitHub Actions tab
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # needed to commit schedule.json back to the repo
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install requests pypdf
+
+      - name: Run scraper
+        id: scraper
+        run: |
+          python3 scraper.py 2>&1 | tee scraper_output.txt
+          # Capture whether schedule.json was modified
+          if git diff --quiet schedule.json; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit updated schedule.json
+        if: steps.scraper.outputs.changed == 'true'
+        run: |
+          git config user.name  "SD Open Play Bot"
+          git config user.email "actions@github.com"
+          git add schedule.json
+          git commit -m "chore: refresh schedules $(date +'%Y-%m-%d')"
+          git push
+
+      - name: Upload scraper log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-log-${{ github.run_id }}
+          path: scraper_output.txt
+          retention-days: 30
+
+      - name: Summarise result
+        if: always()
+        run: |
+          echo "### Scraper result" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          cat scraper_output.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
