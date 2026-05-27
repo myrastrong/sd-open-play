@@ -179,20 +179,67 @@ const SPORT_STYLE = {
   'Other':                  { col:'#5a5a52', bg:'#efefef' },
 };
 
-// May 2026 calendar config
-// NOTE: When updating to a new month, update MAY_START_DOW and WEEKS below,
-// and update the date_overrides in schedule.json.
-const MAY_START_DOW = 5; // May 1 2026 = Friday
-function getDow(d) { return (MAY_START_DOW + d - 1) % 7; }
+// Calendar config — computed dynamically after schedule.json loads.
+// These are populated by initCalendarConfig() once the JSON is available.
+let MONTH_START_DOW = 0; // day-of-week (0=Sun) for the 1st of the month
+let MONTH_DAYS      = 0; // total days in the month
+let MONTH_YEAR      = 0; // e.g. 2026
+let MONTH_NUM       = 0; // 1-based month number, e.g. 5 for May
+let MONTH_NAME      = ''; // e.g. "May"
+let WEEKS           = [];
+let TODAY           = 0; // day-of-month for today, or 0 if not in this month
 
-const WEEKS = [
-  { label:'Week 1 — May 1–2',   dates:[null,null,null,null,null,1,2] },
-  { label:'Week 2 — May 3–9',   dates:[3,4,5,6,7,8,9] },
-  { label:'Week 3 — May 10–16', dates:[10,11,12,13,14,15,16] },
-  { label:'Week 4 — May 17–23', dates:[17,18,19,20,21,22,23] },
-  { label:'Week 5 — May 24–30', dates:[24,25,26,27,28,29,30] },
-];
-const TODAY = 26; // May 26 2026 — update this when deploying a new month
+function getDow(d) { return (MONTH_START_DOW + d - 1) % 7; }
+
+function initCalendarConfig(monthStr) {
+  // monthStr from _meta.month, e.g. "May 2026"
+  const parsed = new Date(monthStr + ' 1');
+  MONTH_YEAR  = parsed.getFullYear();
+  MONTH_NUM   = parsed.getMonth() + 1; // 1-based
+  MONTH_NAME  = parsed.toLocaleString('en-US', { month: 'long' });
+  MONTH_DAYS  = new Date(MONTH_YEAR, MONTH_NUM, 0).getDate();
+  MONTH_START_DOW = parsed.getDay(); // 0=Sun
+
+  // Build WEEKS: each week is Sun-Sat, nulls for days outside the month
+  WEEKS = [];
+  // Day 1 falls on MONTH_START_DOW; pad the start with nulls
+  const totalCells = Math.ceil((MONTH_START_DOW + MONTH_DAYS) / 7) * 7;
+  const allDates = []; // null or day-of-month
+  for (let i = 0; i < totalCells; i++) {
+    const day = i - MONTH_START_DOW + 1;
+    allDates.push((day >= 1 && day <= MONTH_DAYS) ? day : null);
+  }
+  for (let w = 0; w < allDates.length / 7; w++) {
+    const slice = allDates.slice(w * 7, w * 7 + 7);
+    // Skip fully-null weeks (trailing padding)
+    if (slice.some(d => d !== null)) {
+      const first = slice.find(d => d !== null);
+      const last  = [...slice].reverse().find(d => d !== null);
+      WEEKS.push({
+        label: `Week ${WEEKS.length + 1} — ${MONTH_NAME} ${first}–${last}`,
+        dates: slice,
+      });
+    }
+  }
+
+  // Set TODAY to today's day-of-month if we're in this month, else 0
+  const now = new Date();
+  if (now.getFullYear() === MONTH_YEAR && (now.getMonth() + 1) === MONTH_NUM) {
+    TODAY = now.getDate();
+  } else {
+    TODAY = 0;
+  }
+}
+
+function defaultWeekIndex() {
+  // Return the index of the week that contains TODAY.
+  // Falls back to the first week if today is not in this month.
+  if (TODAY === 0) return 0;
+  for (let i = 0; i < WEEKS.length; i++) {
+    if (WEEKS[i].dates.includes(TODAY)) return i;
+  }
+  return 0;
+}
 
 // ─── DATA (loaded from schedule.json) ────────────────────────────────────────
 let CENTERS     = [];
@@ -201,7 +248,7 @@ let weeklyEventsMap = {}; // { dow: [events] }
 let dateOverridesMap = {}; // { "YYYY-MM-DD": [overrides] | "all_closed" }
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
-let curWeek    = 3;
+let curWeek    = 0; // set to defaultWeekIndex() after schedule loads
 let selCenters = new Set();
 let selSports  = new Set();
 
@@ -243,8 +290,9 @@ async function loadSchedule() {
     dateOverridesMap[ov.date].push(ov);
   });
 
-  // Update header metadata
-  document.getElementById('headerSubtitle').textContent =
+  // Initialise calendar config from the schedule month
+  initCalendarConfig(data._meta.month);
+  curWeek = defaultWeekIndex();
     `San Diego Recreation Centers · ${data._meta.month}`;
   document.getElementById('lastUpdated').textContent =
     `Updated ${data._meta.last_updated}`;
@@ -269,8 +317,8 @@ function getEventsForDate(d) {
   const dow = getDow(d);
   if (dow === 0) return [];
 
-  // Build YYYY-MM-DD key for overrides (month is May 2026)
-  const dateKey = `2026-05-${String(d).padStart(2,'0')}`;
+  // Build YYYY-MM-DD key for overrides using actual year/month from schedule
+  const dateKey = `${MONTH_YEAR}-${String(MONTH_NUM).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
   const overrides = dateOverridesMap[dateKey] || [];
 
   // Check for all_day closure (Memorial Day etc.)
@@ -402,7 +450,7 @@ function renderCalendar() {
     if (d) {
       const dateEl = document.createElement('span');
       dateEl.className = 'day-date';
-      dateEl.textContent = 'May ' + d;
+      dateEl.textContent = MONTH_NAME.slice(0,3) + ' ' + d;
       hdr.appendChild(dateEl);
     }
     col.appendChild(hdr);
@@ -522,12 +570,31 @@ function renderLegend() {
 
 function renderNote() {
   const notes = [];
-  if (curWeek === 1) notes.push('May 2–3: BPAC closed – Volleyball Tournament.');
-  if (curWeek === 3) notes.push('May 22: BPAC partial (SDTTA Tourney 4pm+). May 23: BPAC closed – Table Tennis Tournament.');
-  if (curWeek === 4) {
-    notes.push('May 25: Memorial Day – all centers closed.');
-    notes.push('May 29–30: Ocean Air Rooms closed – Voting Pole setup (Gym unaffected).');
+  const visibleDates = new Set(WEEKS[curWeek]?.dates.filter(Boolean) || []);
+
+  // Build notes dynamically from date_overrides for dates in the current week view.
+  // Groups consecutive dates for the same center+label into a single note.
+  const overridesByKey = {}; // key = "label|center" → sorted list of day numbers
+  for (const [dateStr, overrides] of Object.entries(dateOverridesMap)) {
+    const parts = dateStr.split('-');
+    const day = parseInt(parts[2], 10);
+    if (!visibleDates.has(day)) continue;
+    for (const ov of overrides) {
+      if (!ov.blocked) continue;
+      const key = `${ov.label}`;
+      if (!overridesByKey[key]) overridesByKey[key] = { days: [], label: ov.label };
+      overridesByKey[key].days.push(day);
+    }
   }
+
+  for (const { days, label } of Object.values(overridesByKey)) {
+    days.sort((a, b) => a - b);
+    const rangeStr = days.length === 1
+      ? `${MONTH_NAME} ${days[0]}`
+      : `${MONTH_NAME} ${days[0]}–${days[days.length - 1]}`;
+    notes.push(`${rangeStr}: ${label}.`);
+  }
+
   const bar = document.getElementById('noteBar');
   if (notes.length) {
     bar.textContent = '⚠ ' + notes.join('  ·  ');
