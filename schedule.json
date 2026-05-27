@@ -118,6 +118,9 @@
       "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
     },
     {
+      "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
+    },
+    {
       "center": "doyle",
       "dow": 1,
       "sport": "Volleyball",
@@ -741,7 +744,7 @@
       "dow": 6,
       "sport": "Basketball",
       "label": "Basketball",
-      "sh": 21,
+      "sh": 9,
       "sm": 0,
       "eh": 14,
       "em": 50,
@@ -807,7 +810,7 @@
       "dow": 6,
       "sport": "Volleyball",
       "label": "Volleyball (Adults)",
-      "sh": 23,
+      "sh": 11,
       "sm": 0,
       "eh": 14,
       "em": 45,
