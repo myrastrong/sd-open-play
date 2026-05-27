@@ -119,39 +119,61 @@ def parse_ocean_gym(text: str):
     }
 
     events = []
-    current_sport = None
+    current_sport        = None
+    pending_continuation = None  # holds (dow, sport, partial_rest) for "&"-wrapped lines
 
     for raw_line in text.splitlines():
         line = raw_line.strip().lower()
+
+        # Detect sport section header (skip blank lines)
         if not line:
             continue
-
-        # Detect sport section header
         for kw, sport in SPORT_SECTION.items():
             if line == kw or line.startswith(kw + " "):
                 current_sport = sport
+                pending_continuation = None  # reset on new section
                 break
 
         if not current_sport:
             continue
 
-        # Try to parse a "Day HH:MM-HH:MMam/pm" line
-        # e.g. "Monday 2:30-3:30pm" or "Friday 10:15am-2:30pm & 2:30-6:45pm 3 courts only"
+        # ── Handle line continuations ──────────────────────────────────────
+        # The PDF sometimes wraps a single day's schedule across two lines:
+        #   "Friday 10:15am-2:30pm & "   ← ends with "&", ranges continue below
+        #   "2:30-6:45pm 3 courts only"  ← continuation line has no day name
+        # Strategy: if the day-line ends with "&", stash it in pending_continuation.
+        # On the next iteration, if no day name is found and we have a pending
+        # stash, merge the two lines and parse the combined result.
+
         day_match = re.match(
-            r"(monday|tuesday|wednesday|thursday|friday[s]?|saturday[s]?)\s+(.*)",
+            r"(?:\w+\s+)?(monday|tuesday|wednesday|thursday|friday[s]?|saturday[s]?)\s+(.*)",
             line
         )
-        if not day_match:
+
+        if day_match:
+            day_str = day_match.group(1).rstrip("s")  # "fridays" → "friday"
+            rest    = day_match.group(2)
+            dow     = DOW_MAP.get(day_str) or DOW_MAP.get(day_str + "s")
+            if dow is None:
+                continue
+            # If rest ends with "&", the schedule continues on the next line
+            if rest.rstrip().endswith("&"):
+                pending_continuation = (dow, current_sport, rest.rstrip().rstrip("&").rstrip())
+                continue
+            # Otherwise clear any stale pending state
+            pending_continuation = None
+
+        elif pending_continuation is not None:
+            # This line is a continuation of the previous day's schedule
+            dow, current_sport, partial_rest = pending_continuation
+            rest = partial_rest + " " + line
+            pending_continuation = None
+
+        else:
+            # No day name, no pending continuation — not a schedule line
             continue
 
-        day_str = day_match.group(1).rstrip("s")  # normalize "fridays" → "friday"
-        rest    = day_match.group(2)
-
-        dow = DOW_MAP.get(day_str) or DOW_MAP.get(day_str + "s")
-        if dow is None:
-            continue
-
-        # Extract all time ranges on this line (handles "x & y" style)
+        # ── Extract and append events ──────────────────────────────────────
         ranges = re.findall(
             r"\d{1,2}(?::\d{2})?(?:am|pm)?\s*[-–]\s*\d{1,2}(?::\d{2})?(?:am|pm)?",
             rest
@@ -163,27 +185,25 @@ def parse_ocean_gym(text: str):
                 continue
             sh, sm, eh, em = times
 
-            # Build label — note 3 courts annotation for Fri Pickleball session 2
             label = current_sport
-            if current_sport == "Pickleball" and dow == 5:
+            if current_sport == "Volleyball":
+                label = "Volleyball (Adults)"
+
+            # Pickleball Friday: merge all ranges (possibly split across lines)
+            # into one continuous block; annotate "3 courts from 2:30pm".
+            if current_sport == "Pickleball" and dow == 5 and len(ranges) > 1:
                 if i == 0:
                     label = "Pickleball"
                 else:
-                    label = "Pickleball (3 courts)"
-            elif current_sport == "Volleyball":
-                label = "Volleyball (Adults)"
-
-            # Merge back-to-back Pickleball Friday sessions into one block
-            if current_sport == "Pickleball" and dow == 5 and len(ranges) == 2:
-                if i == 1:
-                    # Extend the previous event's end time
                     for ev in reversed(events):
-                        if ev["center"] == "ocean_gym" and ev["dow"] == 5 and ev["sport"] == "Pickleball":
-                            ev["eh"] = eh
-                            ev["em"] = em
+                        if (ev["center"] == "ocean_gym"
+                                and ev["dow"] == 5
+                                and ev["sport"] == "Pickleball"):
+                            ev["eh"]    = eh
+                            ev["em"]    = em
                             ev["label"] = "Pickleball (3 courts from 2:30pm)"
                             break
-                    continue  # don't add a second event
+                    continue
 
             events.append({
                 "center": "ocean_gym",
@@ -294,6 +314,129 @@ def fetch_pdf_text(url: str) -> tuple[str | None, str | None]:
         return None, f"PDF parse error: {e}"
 
 
+# ── DATE HELPERS ──────────────────────────────────────────────────────────────
+
+def current_month_str() -> str:
+    """Returns e.g. 'June 2026' for the current month."""
+    today = date.today()
+    return today.strftime("%B %Y")  # e.g. "June 2026"
+
+
+def roll_date_overrides(overrides: list, old_month_str: str, new_month_str: str) -> list:
+    """
+    Re-date any date_overrides entries whose dates fall in old_month to new_month.
+
+    Overrides with known recurring patterns (Memorial Day, holiday closures) are
+    automatically re-computed for the new month. Overrides for events that are
+    one-off and month-specific (tournaments, special events) are dropped and
+    logged so the operator knows to re-add them manually.
+
+    Returns the updated overrides list.
+    """
+    from calendar import monthcalendar, MONDAY
+
+    # Parse old and new month
+    old_dt  = datetime.strptime(old_month_str, "%B %Y")
+    new_dt  = datetime.strptime(new_month_str, "%B %Y")
+    new_y   = new_dt.year
+    new_m   = new_dt.month
+    days_in_new = (date(new_y, new_m % 12 + 1, 1) - date(new_y, new_m, 1)).days \
+                  if new_m < 12 else 31
+
+    if old_dt == new_dt:
+        return overrides  # same month, nothing to do
+
+    print(f"\n   ⟳  Rolling date_overrides from {old_month_str} → {new_month_str}")
+
+    # Find federal holidays that fall in the new month
+    new_holidays = {}  # day → label
+
+    # Memorial Day: last Monday of May
+    if new_m == 5:
+        cal = monthcalendar(new_y, 5)
+        last_monday = max(week[MONDAY] for week in cal if week[MONDAY] != 0)
+        new_holidays[last_monday] = "Memorial Day – All Centers Closed"
+
+    # Independence Day: July 4
+    if new_m == 7:
+        new_holidays[4] = "Independence Day – All Centers Closed"
+
+    # Labor Day: first Monday of September
+    if new_m == 9:
+        cal = monthcalendar(new_y, 9)
+        first_monday = next(week[MONDAY] for week in cal if week[MONDAY] != 0)
+        new_holidays[first_monday] = "Labor Day – All Centers Closed"
+
+    # Veterans Day: November 11
+    if new_m == 11:
+        new_holidays[11] = "Veterans Day – All Centers Closed"
+
+    # Thanksgiving: fourth Thursday of November
+    if new_m == 11:
+        from calendar import THURSDAY
+        cal = monthcalendar(new_y, 11)
+        thursdays = [week[THURSDAY] for week in cal if week[THURSDAY] != 0]
+        new_holidays[thursdays[3]] = "Thanksgiving – All Centers Closed"
+
+    # Christmas Day: December 25
+    if new_m == 12:
+        new_holidays[25] = "Christmas Day – All Centers Closed"
+
+    # New Year's Day: January 1
+    if new_m == 1:
+        new_holidays[1] = "New Year's Day – All Centers Closed"
+
+    kept     = []
+    dropped  = []
+    added    = []
+
+    for ov in overrides:
+        d_str = ov.get("date", "")
+        label = ov.get("label", "")
+
+        # Keep non-dated overrides as-is
+        if not d_str:
+            kept.append(ov)
+            continue
+
+        # Check if this override is a known federal holiday → will be re-generated
+        is_holiday = any(h in label for h in [
+            "Memorial Day", "Independence Day", "Labor Day",
+            "Veterans Day", "Thanksgiving", "Christmas", "New Year"
+        ])
+        if is_holiday:
+            continue  # will be replaced below
+
+        # Non-holiday one-off events (tournaments, special events) are dropped
+        dropped.append(label)
+
+    # Add auto-generated holidays for the new month
+    for day, label in new_holidays.items():
+        date_str = f"{new_y}-{str(new_m).padStart(2, '0')}-{str(day).padStart(2, '0')}" \
+            if False else f"{new_y}-{new_m:02d}-{day:02d}"
+        entry = {
+            "date":    date_str,
+            "center":  "all",
+            "blocked": True,
+            "all_day": True,
+            "label":   label,
+            "sh": 9, "sm": 0, "eh": 21, "em": 0,
+            "sport":   "Other",
+        }
+        kept.append(entry)
+        added.append(f"{date_str}: {label}")
+
+    if added:
+        print(f"   ✓  Auto-added holidays: {', '.join(added)}")
+    if dropped:
+        print(f"   ⚠  Dropped one-off overrides (add manually if still relevant):")
+        for d in dropped:
+            print(f"      • {d}")
+
+    kept.sort(key=lambda x: x.get("date", ""))
+    return kept
+
+
 # ── MAIN ──────────────────────────────────────────────────────────────────────
 
 def run(dry_run: bool = False):
@@ -372,8 +515,17 @@ def run(dry_run: bool = False):
             results[cid]["changed"] = True
         print()
 
-    # Apply updates
-    any_changed = any(
+    # Determine whether _meta.month needs rolling to the current month
+    today          = date.today()
+    current_month  = today.strftime("%B %Y")     # e.g. "June 2026"
+    existing_month = schedule["_meta"].get("month", "")
+    month_changed  = current_month != existing_month
+
+    if month_changed:
+        print(f"\n📅 Month change detected: {existing_month!r} → {current_month!r}")
+
+    # Treat a month change as a write-worthy change even if no events differ
+    any_changed = month_changed or any(
         r.get("status") == "ok" and r.get("changed") for r in results.values()
     )
 
@@ -381,7 +533,8 @@ def run(dry_run: bool = False):
         print("No schedule changes to write.\n")
     elif dry_run:
         print("DRY RUN — changes detected but not written to schedule.json\n")
-        print("Centers with changes:")
+        if month_changed:
+            print(f"  • _meta.month would update: {existing_month!r} → {current_month!r}")
         for cid, r in results.items():
             if r.get("changed"):
                 print(f"  • {cid}: {len(r['new_events'])} new events")
@@ -397,18 +550,28 @@ def run(dry_run: bool = False):
         updated_entries = []
         for cid, r in results.items():
             if r.get("status") == "ok" and r.get("changed"):
-                # Insert a comment marker before the center's block
                 c = center_map[cid]
                 updated_entries.append({"_comment": f"── {c['label'].upper()} ─────────────────────"})
                 updated_entries.extend(r["new_events"])
 
         schedule["weekly_events"] = comment_entries + unchanged_entries + updated_entries
-        schedule["_meta"]["last_updated"] = date.today().isoformat()
+
+        # Roll date_overrides forward if month changed
+        if month_changed:
+            schedule["date_overrides"] = roll_date_overrides(
+                schedule.get("date_overrides", []),
+                existing_month,
+                current_month,
+            )
+
+        # Update _meta with current month and today's date
+        schedule["_meta"]["month"]        = current_month
+        schedule["_meta"]["last_updated"] = today.isoformat()
 
         with open(SCHEDULE_JSON, "w") as f:
             json.dump(schedule, f, indent=2)
 
-        print(f"✅ schedule.json updated (last_updated: {schedule['_meta']['last_updated']})\n")
+        print(f"✅ schedule.json updated — month: {current_month}, last_updated: {today.isoformat()}\n")
 
     # Print summary
     print("─" * 60)
