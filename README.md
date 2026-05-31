@@ -2,7 +2,7 @@
 
 Interactive weekly calendar of open play schedules across San Diego recreation centers.
 
-**[View the live calendar →](https://myrastrong.github.io/sd-open-play)**
+**[View the live calendar →](https://myrastrong.github.io/sd-open-play/)**
 
 ---
 

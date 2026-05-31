@@ -262,7 +262,8 @@ function fmt(h, m) {
 
 // ─── DATA LOADING ─────────────────────────────────────────────────────────────
 async function loadSchedule() {
-  const res = await fetch('schedule.json');
+  const scheduleUrl = new URL('schedule.json', getPageBaseUrl());
+  const res = await fetch(scheduleUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
 
@@ -293,6 +294,7 @@ async function loadSchedule() {
   // Initialise calendar config from the schedule month
   initCalendarConfig(data._meta.month);
   curWeek = defaultWeekIndex();
+  document.getElementById('headerSubtitle').textContent =
     `San Diego Recreation Centers · ${data._meta.month}`;
   document.getElementById('lastUpdated').textContent =
     `Updated ${data._meta.last_updated}`;
@@ -303,12 +305,21 @@ async function loadSchedule() {
   CENTERS.forEach(c => {
     const a = document.createElement('a');
     a.href = c.source_url;
-    a.target = '_blank';
     a.textContent = c.short + ' ↗';
     footerEl.appendChild(a);
   });
 
   return data;
+}
+
+function getPageBaseUrl() {
+  const url = new URL(window.location.href);
+  const path = url.pathname;
+  if (path.endsWith('/') || path.endsWith('.html')) {
+    return new URL('.', url.href);
+  }
+  url.pathname = path + '/';
+  return url;
 }
 
 // ─── EVENT RETRIEVAL ──────────────────────────────────────────────────────────
