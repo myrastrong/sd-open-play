@@ -105,8 +105,8 @@ footer { background:var(--surface); border-top:1px solid var(--border); padding:
   <p>Loading schedule data…</p>
   <div id="loadError">
     <h2>Could not load schedule</h2>
-    <p>Make sure <code>schedule.json</code> is in the same folder as this file, then reload the page.</p>
-    <p style="margin-top:6px">If hosting on GitHub Pages, ensure both files are committed to your repository.</p>
+    <p id="loadErrorDetail">Make sure <code>schedule.json</code> is in the same folder as this file, then reload the page.</p>
+    <p id="loadErrorHelp" style="margin-top:6px">If hosting on GitHub Pages, ensure both files are committed to your repository.</p>
   </div>
 </div>
 
@@ -262,9 +262,7 @@ function fmt(h, m) {
 
 // ─── DATA LOADING ─────────────────────────────────────────────────────────────
 async function loadSchedule() {
-  const scheduleUrl = new URL('schedule.json', getPageBaseUrl());
-  const res = await fetch(scheduleUrl);
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const res = await fetchSchedule();
   const data = await res.json();
 
   CENTERS = data.centers;
@@ -310,6 +308,26 @@ async function loadSchedule() {
   });
 
   return data;
+}
+
+async function fetchSchedule() {
+  const candidates = [
+    new URL('schedule.json', getPageBaseUrl()).href,
+    new URL('/sd-open-play/schedule.json', window.location.origin).href,
+  ];
+
+  let lastError;
+  for (const url of [...new Set(candidates)]) {
+    try {
+      const res = await fetch(url, { cache: 'no-store' });
+      if (res.ok) return res;
+      lastError = new Error(`${url} returned HTTP ${res.status}`);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error('Unable to load schedule.json');
 }
 
 function getPageBaseUrl() {
@@ -728,6 +746,12 @@ function buildWeekDropdown() {
     console.error('Failed to load schedule.json:', err);
     spinner.style.display   = 'none';
     loadingText.style.display = 'none';
+    if (window.location.protocol === 'file:') {
+      document.getElementById('loadErrorDetail').innerHTML =
+        'This page was opened as a local file. Browsers block loading <code>schedule.json</code> from <code>file://</code> pages.';
+      document.getElementById('loadErrorHelp').innerHTML =
+        'Preview it with a local web server instead, for example <code>http://127.0.0.1:8000/</code>.';
+    }
     errorEl.style.display   = 'flex';
   }
 })();
