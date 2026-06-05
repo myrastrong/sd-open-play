@@ -506,16 +506,16 @@ function renderCalendar() {
     // Events
     if (d) {
       const raw = getEventsForDate(d);
-      if (raw.some(e => e.allDay)) {
+      const fullDayClosure = raw.find(e => e.allDay && e.center === 'all');
+      if (fullDayClosure) {
         const closed = document.createElement('div');
         closed.className = 'ev-all-closed';
-        closed.innerHTML = 'Memorial Day<br>Closed';
+        closed.textContent = fullDayClosure.label || 'Closed';
         body.appendChild(closed);
       } else {
         const filtered = raw.filter(ev => passesFilter(ev));
         const laid     = layoutDay(filtered);
         laid.forEach(ev => {
-          if (ev.allDay) return;
           const top = evTopPx(ev);
           const ht  = evHeightPx(ev);
           const tc  = ev.totalCols || 1;
@@ -538,7 +538,7 @@ function renderCalendar() {
 
           const sportEl = document.createElement('div');
           sportEl.className = 'ev-sport';
-          sportEl.textContent = ev.sport;
+          sportEl.textContent = ev.blocked ? ev.label : ev.sport;
           el.appendChild(sportEl);
 
           if (showCenter) {
