@@ -817,5 +817,32 @@
       "loc": "Gymnasium"
     }
   ],
-  "date_overrides": []
+  "date_overrides": [
+    {
+      "date": "2026-06-19",
+      "center": "doyle",
+      "blocked": true,
+      "all_day": true,
+      "label": "Doyle Park Closed",
+      "sh": 9,
+      "sm": 0,
+      "eh": 21,
+      "em": 0,
+      "sport": "Other",
+      "_source": "pdf_closure"
+    },
+    {
+      "date": "2026-06-19",
+      "center": "balboa",
+      "blocked": true,
+      "all_day": true,
+      "label": "Balboa Park (BPAC) Closed",
+      "sh": 9,
+      "sm": 0,
+      "eh": 21,
+      "em": 0,
+      "sport": "Other",
+      "_source": "pdf_closure"
+    }
+  ]
 }

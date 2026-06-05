@@ -368,73 +368,113 @@ def current_month_str() -> str:
     return today.strftime("%B %Y")  # e.g. "June 2026"
 
 
+def _parse_month(month_str: str) -> tuple[int, int]:
+    parsed = datetime.strptime(month_str, "%B %Y")
+    return parsed.year, parsed.month
+
+
+def _pdf_matches_month(text: str, month_str: str) -> bool:
+    return month_str.lower() in text.lower()
+
+
+def detect_pdf_closure_overrides(center: dict, text: str, month_str: str) -> list[dict]:
+    """
+    Detect all-day closures stated in a center's ingested PDF text.
+
+    This intentionally reads only the PDF text, not a public holiday calendar.
+    It catches calendar-grid patterns like:
+      19
+      Closed
+    or:
+      19
+      Facility Closed
+    """
+    if not _pdf_matches_month(text, month_str):
+        return []
+
+    year, month = _parse_month(month_str)
+    lines = [line.strip() for line in text.splitlines()]
+    overrides = []
+    seen = set()
+
+    day_line_re = re.compile(
+        r"^(\d{1,2})(?:st|nd|rd|th)?(?:\s+(?:sun|sunday|mon|monday|tue|tuesday|wed|wednesday|thu|thursday|fri|friday|sat|saturday))?$",
+        re.IGNORECASE,
+    )
+
+    for i, line in enumerate(lines):
+        day_match = day_line_re.match(line)
+        if not day_match:
+            continue
+
+        day = int(day_match.group(1))
+        if not 1 <= day <= 31:
+            continue
+
+        cell_lines = []
+        for next_line in lines[i + 1:i + 8]:
+            if day_line_re.match(next_line):
+                break
+            cell_lines.append(next_line)
+
+        nearby = " ".join(cell_lines).lower()
+        if not re.search(r"\b(?:facility\s+)?closed\b", nearby):
+            continue
+
+        key = (center["id"], day)
+        if key in seen:
+            continue
+        seen.add(key)
+
+        overrides.append({
+            "date":    f"{year}-{month:02d}-{day:02d}",
+            "center":  center["id"],
+            "blocked": True,
+            "all_day": True,
+            "label":   f"{center['label']} Closed",
+            "sh": 9, "sm": 0, "eh": 21, "em": 0,
+            "sport":   "Other",
+            "_source":  "pdf_closure",
+        })
+
+    return overrides
+
+
+def merge_pdf_closure_overrides(existing: list, detected: list, month_str: str) -> list:
+    """Replace PDF-derived closures for the target month with freshly detected ones."""
+    year, month = _parse_month(month_str)
+    month_prefix = f"{year}-{month:02d}-"
+    kept = [
+        ov for ov in existing
+        if not (ov.get("_source") == "pdf_closure" and ov.get("date", "").startswith(month_prefix))
+    ]
+
+    by_key = {(ov.get("date"), ov.get("center")): ov for ov in kept}
+    for ov in detected:
+        by_key[(ov.get("date"), ov.get("center"))] = ov
+
+    return sorted(by_key.values(), key=lambda x: (x.get("date", ""), x.get("center", "")))
+
+
 def roll_date_overrides(overrides: list, old_month_str: str, new_month_str: str) -> list:
     """
-    Re-date any date_overrides entries whose dates fall in old_month to new_month.
+    Drop dated overrides from the old month when schedule data rolls forward.
 
-    Overrides with known recurring patterns (Memorial Day, holiday closures) are
-    automatically re-computed for the new month. Overrides for events that are
-    one-off and month-specific (tournaments, special events) are dropped and
-    logged so the operator knows to re-add them manually.
-
+    New closures should be detected from ingested PDF text, not generated from
+    an external public holiday calendar.
     Returns the updated overrides list.
     """
-    from calendar import monthcalendar, MONDAY
-
-    # Parse old and new month
     old_dt  = datetime.strptime(old_month_str, "%B %Y")
     new_dt  = datetime.strptime(new_month_str, "%B %Y")
-    new_y   = new_dt.year
-    new_m   = new_dt.month
-    days_in_new = (date(new_y, new_m % 12 + 1, 1) - date(new_y, new_m, 1)).days \
-                  if new_m < 12 else 31
 
     if old_dt == new_dt:
         return overrides  # same month, nothing to do
 
     print(f"\n   ⟳  Rolling date_overrides from {old_month_str} → {new_month_str}")
 
-    # Find federal holidays that fall in the new month
-    new_holidays = {}  # day → label
-
-    # Memorial Day: last Monday of May
-    if new_m == 5:
-        cal = monthcalendar(new_y, 5)
-        last_monday = max(week[MONDAY] for week in cal if week[MONDAY] != 0)
-        new_holidays[last_monday] = "Memorial Day – All Centers Closed"
-
-    # Independence Day: July 4
-    if new_m == 7:
-        new_holidays[4] = "Independence Day – All Centers Closed"
-
-    # Labor Day: first Monday of September
-    if new_m == 9:
-        cal = monthcalendar(new_y, 9)
-        first_monday = next(week[MONDAY] for week in cal if week[MONDAY] != 0)
-        new_holidays[first_monday] = "Labor Day – All Centers Closed"
-
-    # Veterans Day: November 11
-    if new_m == 11:
-        new_holidays[11] = "Veterans Day – All Centers Closed"
-
-    # Thanksgiving: fourth Thursday of November
-    if new_m == 11:
-        from calendar import THURSDAY
-        cal = monthcalendar(new_y, 11)
-        thursdays = [week[THURSDAY] for week in cal if week[THURSDAY] != 0]
-        new_holidays[thursdays[3]] = "Thanksgiving – All Centers Closed"
-
-    # Christmas Day: December 25
-    if new_m == 12:
-        new_holidays[25] = "Christmas Day – All Centers Closed"
-
-    # New Year's Day: January 1
-    if new_m == 1:
-        new_holidays[1] = "New Year's Day – All Centers Closed"
-
     kept     = []
     dropped  = []
-    added    = []
+    new_prefix = f"{new_dt.year}-{new_dt.month:02d}-"
 
     for ov in overrides:
         d_str = ov.get("date", "")
@@ -445,37 +485,13 @@ def roll_date_overrides(overrides: list, old_month_str: str, new_month_str: str)
             kept.append(ov)
             continue
 
-        # Check if this override is a known federal holiday → will be re-generated
-        is_holiday = any(h in label for h in [
-            "Memorial Day", "Independence Day", "Labor Day",
-            "Veterans Day", "Thanksgiving", "Christmas", "New Year"
-        ])
-        if is_holiday:
-            continue  # will be replaced below
+        if d_str.startswith(new_prefix):
+            kept.append(ov)
+        else:
+            dropped.append(label)
 
-        # Non-holiday one-off events (tournaments, special events) are dropped
-        dropped.append(label)
-
-    # Add auto-generated holidays for the new month
-    for day, label in new_holidays.items():
-        date_str = f"{new_y}-{str(new_m).padStart(2, '0')}-{str(day).padStart(2, '0')}" \
-            if False else f"{new_y}-{new_m:02d}-{day:02d}"
-        entry = {
-            "date":    date_str,
-            "center":  "all",
-            "blocked": True,
-            "all_day": True,
-            "label":   label,
-            "sh": 9, "sm": 0, "eh": 21, "em": 0,
-            "sport":   "Other",
-        }
-        kept.append(entry)
-        added.append(f"{date_str}: {label}")
-
-    if added:
-        print(f"   ✓  Auto-added holidays: {', '.join(added)}")
     if dropped:
-        print(f"   ⚠  Dropped one-off overrides (add manually if still relevant):")
+        print(f"   ⚠  Dropped old-month overrides:")
         for d in dropped:
             print(f"      • {d}")
 
@@ -498,6 +514,9 @@ def run(dry_run: bool = False):
 
     center_map = {c["id"]: c for c in schedule["centers"]}
     results = {}  # center_id → {status, message, new_events}
+    today          = date.today()
+    current_month  = today.strftime("%B %Y")     # e.g. "June 2026"
+    pdf_closures   = []
 
     for center in schedule["centers"]:
         cid   = center["id"]
@@ -520,6 +539,10 @@ def run(dry_run: bool = False):
             continue
 
         print(f"   ✓  Fetched PDF ({len(text)} chars extracted)")
+        closure_overrides = detect_pdf_closure_overrides(center, text, current_month)
+        if closure_overrides:
+            pdf_closures.extend(closure_overrides)
+            print(f"   ✓  Detected {len(closure_overrides)} PDF-stated closure override(s)")
 
         # Run parser if available
         parser = PARSERS.get(cid)
@@ -562,8 +585,6 @@ def run(dry_run: bool = False):
         print()
 
     # Determine whether _meta.month needs rolling to the current month
-    today          = date.today()
-    current_month  = today.strftime("%B %Y")     # e.g. "June 2026"
     existing_month = schedule["_meta"].get("month", "")
     month_changed  = current_month != existing_month
 
@@ -571,7 +592,11 @@ def run(dry_run: bool = False):
         print(f"\n📅 Month change detected: {existing_month!r} → {current_month!r}")
 
     # Treat a month change as a write-worthy change even if no events differ
-    any_changed = month_changed or any(
+    existing_pdf_closures = [
+        ov for ov in schedule.get("date_overrides", [])
+        if ov.get("_source") == "pdf_closure"
+    ]
+    any_changed = month_changed or pdf_closures != existing_pdf_closures or any(
         r.get("status") == "ok" and r.get("changed") for r in results.values()
     )
 
@@ -581,6 +606,8 @@ def run(dry_run: bool = False):
         print("DRY RUN — changes detected but not written to schedule.json\n")
         if month_changed:
             print(f"  • _meta.month would update: {existing_month!r} → {current_month!r}")
+        if pdf_closures:
+            print(f"  • PDF-stated closures would update: {len(pdf_closures)} override(s)")
         for cid, r in results.items():
             if r.get("changed"):
                 print(f"  • {cid}: {len(r['new_events'])} new events")
@@ -604,11 +631,19 @@ def run(dry_run: bool = False):
 
         # Roll date_overrides forward if month changed
         if month_changed:
-            schedule["date_overrides"] = roll_date_overrides(
+            base_overrides = roll_date_overrides(
                 schedule.get("date_overrides", []),
                 existing_month,
                 current_month,
             )
+        else:
+            base_overrides = schedule.get("date_overrides", [])
+
+        schedule["date_overrides"] = merge_pdf_closure_overrides(
+            base_overrides,
+            pdf_closures,
+            current_month,
+        )
 
         # Update _meta with current month and today's date
         schedule["_meta"]["month"]        = current_month
