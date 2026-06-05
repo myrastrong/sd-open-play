@@ -1,8 +1,8 @@
 {
   "_meta": {
     "title": "SD Open Play \u2014 Recreation Center Schedules",
-    "month": "May 2026",
-    "last_updated": "2026-05-27",
+    "month": "June 2026",
+    "last_updated": "2026-06-05",
     "notes": "Schedules sourced from sandiego.gov PDFs. Update last_updated when refreshing data.",
     "how_to_add_center": "Add an entry to 'centers', then add its events to the matching center_id in 'weekly_events'. Use dow 0=Sun through 6=Sat. Times use 24h integers: sh/sm = start hour/minute, eh/em = end hour/minute."
   },
@@ -113,6 +113,9 @@
       "eh": 14,
       "em": 15,
       "loc": "Gymnasium"
+    },
+    {
+      "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
     },
     {
       "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
@@ -693,9 +696,6 @@
       "loc": "Gymnasium"
     },
     {
-      "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
-    },
-    {
       "center": "ocean_gym",
       "dow": 1,
       "sport": "Basketball",
@@ -817,85 +817,5 @@
       "loc": "Gymnasium"
     }
   ],
-  "date_overrides": [
-    {
-      "_comment": "May 2026 specific closures and special events",
-      "date": "2026-05-02",
-      "center": "balboa",
-      "blocked": true,
-      "label": "BPAC Closed \u2013 Volleyball Tournament",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other"
-    },
-    {
-      "date": "2026-05-03",
-      "center": "balboa",
-      "blocked": true,
-      "label": "BPAC Closed \u2013 Volleyball Tournament",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other"
-    },
-    {
-      "date": "2026-05-23",
-      "center": "balboa",
-      "blocked": true,
-      "label": "BPAC Closed \u2013 Table Tennis Tournament",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other"
-    },
-    {
-      "date": "2026-05-24",
-      "center": "balboa",
-      "blocked": true,
-      "label": "BPAC Closed \u2013 Table Tennis Tournament",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other"
-    },
-    {
-      "date": "2026-05-25",
-      "center": "all",
-      "blocked": true,
-      "all_day": true,
-      "label": "Memorial Day \u2013 All Centers Closed",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other"
-    },
-    {
-      "date": "2026-05-29",
-      "center": "ocean_rooms",
-      "blocked": true,
-      "label": "Ocean Air Rooms \u2013 Voting Pole Setup",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other"
-    },
-    {
-      "date": "2026-05-30",
-      "center": "ocean_rooms",
-      "blocked": true,
-      "label": "Ocean Air Rooms \u2013 Voting Pole Setup",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other"
-    }
-  ]
+  "date_overrides": []
 }
