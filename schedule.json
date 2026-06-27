@@ -2,7 +2,7 @@
   "_meta": {
     "title": "SD Open Play \u2014 Recreation Center Schedules",
     "month": "June 2026",
-    "last_updated": "2026-06-20",
+    "last_updated": "2026-06-27",
     "notes": "Schedules sourced from sandiego.gov PDFs. Update last_updated when refreshing data.",
     "how_to_add_center": "Add an entry to 'centers', then add its events to the matching center_id in 'weekly_events'. Use dow 0=Sun through 6=Sat. Times use 24h integers: sh/sm = start hour/minute, eh/em = end hour/minute."
   },
