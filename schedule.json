@@ -1,8 +1,8 @@
 {
   "_meta": {
     "title": "SD Open Play \u2014 Recreation Center Schedules",
-    "month": "June 2026",
-    "last_updated": "2026-06-27",
+    "month": "July 2026",
+    "last_updated": "2026-07-04",
     "notes": "Schedules sourced from sandiego.gov PDFs. Update last_updated when refreshing data.",
     "how_to_add_center": "Add an entry to 'centers', then add its events to the matching center_id in 'weekly_events'. Use dow 0=Sun through 6=Sat. Times use 24h integers: sh/sm = start hour/minute, eh/em = end hour/minute."
   },
@@ -819,20 +819,7 @@
   ],
   "date_overrides": [
     {
-      "date": "2026-06-07",
-      "center": "doyle",
-      "blocked": true,
-      "all_day": true,
-      "label": "Doyle Park Closed",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other",
-      "_source": "pdf_closure"
-    },
-    {
-      "date": "2026-06-07",
+      "date": "2026-07-03",
       "center": "nobel",
       "blocked": true,
       "all_day": true,
@@ -845,7 +832,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-07",
+      "date": "2026-07-03",
       "center": "ocean_rooms",
       "blocked": true,
       "all_day": true,
@@ -858,20 +845,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-13",
-      "center": "nobel",
-      "blocked": true,
-      "all_day": true,
-      "label": "Nobel Rec Center Closed",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other",
-      "_source": "pdf_closure"
-    },
-    {
-      "date": "2026-06-14",
+      "date": "2026-07-04",
       "center": "doyle",
       "blocked": true,
       "all_day": true,
@@ -884,7 +858,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-14",
+      "date": "2026-07-04",
       "center": "nobel",
       "blocked": true,
       "all_day": true,
@@ -897,7 +871,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-14",
+      "date": "2026-07-04",
       "center": "ocean_rooms",
       "blocked": true,
       "all_day": true,
@@ -910,7 +884,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-19",
+      "date": "2026-07-05",
       "center": "doyle",
       "blocked": true,
       "all_day": true,
@@ -923,7 +897,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-19",
+      "date": "2026-07-05",
       "center": "nobel",
       "blocked": true,
       "all_day": true,
@@ -936,7 +910,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-19",
+      "date": "2026-07-05",
       "center": "ocean_rooms",
       "blocked": true,
       "all_day": true,
@@ -949,20 +923,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-20",
-      "center": "nobel",
-      "blocked": true,
-      "all_day": true,
-      "label": "Nobel Rec Center Closed",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other",
-      "_source": "pdf_closure"
-    },
-    {
-      "date": "2026-06-21",
+      "date": "2026-07-06",
       "center": "doyle",
       "blocked": true,
       "all_day": true,
@@ -975,7 +936,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-21",
+      "date": "2026-07-12",
       "center": "nobel",
       "blocked": true,
       "all_day": true,
@@ -988,7 +949,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-21",
+      "date": "2026-07-12",
       "center": "ocean_rooms",
       "blocked": true,
       "all_day": true,
@@ -1001,20 +962,7 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-27",
-      "center": "nobel",
-      "blocked": true,
-      "all_day": true,
-      "label": "Nobel Rec Center Closed",
-      "sh": 9,
-      "sm": 0,
-      "eh": 21,
-      "em": 0,
-      "sport": "Other",
-      "_source": "pdf_closure"
-    },
-    {
-      "date": "2026-06-28",
+      "date": "2026-07-13",
       "center": "doyle",
       "blocked": true,
       "all_day": true,
@@ -1027,11 +975,76 @@
       "_source": "pdf_closure"
     },
     {
-      "date": "2026-06-28",
+      "date": "2026-07-19",
       "center": "nobel",
       "blocked": true,
       "all_day": true,
       "label": "Nobel Rec Center Closed",
+      "sh": 9,
+      "sm": 0,
+      "eh": 21,
+      "em": 0,
+      "sport": "Other",
+      "_source": "pdf_closure"
+    },
+    {
+      "date": "2026-07-19",
+      "center": "ocean_rooms",
+      "blocked": true,
+      "all_day": true,
+      "label": "Ocean Air \u2013 Rooms Closed",
+      "sh": 9,
+      "sm": 0,
+      "eh": 21,
+      "em": 0,
+      "sport": "Other",
+      "_source": "pdf_closure"
+    },
+    {
+      "date": "2026-07-20",
+      "center": "doyle",
+      "blocked": true,
+      "all_day": true,
+      "label": "Doyle Park Closed",
+      "sh": 9,
+      "sm": 0,
+      "eh": 21,
+      "em": 0,
+      "sport": "Other",
+      "_source": "pdf_closure"
+    },
+    {
+      "date": "2026-07-26",
+      "center": "nobel",
+      "blocked": true,
+      "all_day": true,
+      "label": "Nobel Rec Center Closed",
+      "sh": 9,
+      "sm": 0,
+      "eh": 21,
+      "em": 0,
+      "sport": "Other",
+      "_source": "pdf_closure"
+    },
+    {
+      "date": "2026-07-26",
+      "center": "ocean_rooms",
+      "blocked": true,
+      "all_day": true,
+      "label": "Ocean Air \u2013 Rooms Closed",
+      "sh": 9,
+      "sm": 0,
+      "eh": 21,
+      "em": 0,
+      "sport": "Other",
+      "_source": "pdf_closure"
+    },
+    {
+      "date": "2026-07-27",
+      "center": "doyle",
+      "blocked": true,
+      "all_day": true,
+      "label": "Doyle Park Closed",
       "sh": 9,
       "sm": 0,
       "eh": 21,
