@@ -2,7 +2,7 @@
   "_meta": {
     "title": "SD Open Play \u2014 Recreation Center Schedules",
     "month": "September 2026",
-    "last_updated": "2026-09-05",
+    "last_updated": "2026-09-12",
     "notes": "Schedules sourced from sandiego.gov PDFs. Update last_updated when refreshing data.",
     "how_to_add_center": "Add an entry to 'centers', then add its events to the matching center_id in 'weekly_events'. Use dow 0=Sun through 6=Sat. Times use 24h integers: sh/sm = start hour/minute, eh/em = end hour/minute."
   },
@@ -113,6 +113,9 @@
       "eh": 14,
       "em": 15,
       "loc": "Gymnasium"
+    },
+    {
+      "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
     },
     {
       "_comment": "\u2500\u2500 OCEAN AIR \u2013 GYM \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
@@ -730,8 +733,8 @@
       "label": "Badminton",
       "sh": 14,
       "sm": 0,
-      "eh": 17,
-      "em": 30,
+      "eh": 19,
+      "em": 45,
       "loc": "Gymnasium"
     },
     {
